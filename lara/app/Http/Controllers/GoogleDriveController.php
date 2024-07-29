@@ -39,7 +39,8 @@ class GoogleDriveController extends Controller
             $filepath = storage_path('app/public/' . $path);
             $mimetype = $file->getMimeType();
 
-            $data = $this->driveService->uploadFile($filename, $filepath, $mimetype);
+            $data = $this->driveService->uploadFileToSharedDrive($filename, $filepath, $mimetype,"14gHgU7_81Csdy9YLKHQsxkzy-0KUs7hj"); //laradrive/uploads
+            
             $upload_data[] = ['filename' => $filename, 'link' => "https://drive.google.com/file/d/{$data}/view"];
 
             // Optionally delete the local file after upload

@@ -19,6 +19,7 @@ Route::get('/', function () {
 });
 
 Route::get('google-drive', [GoogleDriveController::class, 'index']);
+Route::get('', [GoogleDriveController::class, 'index']);
 Route::post('google-drive/upload', [GoogleDriveController::class, 'upload'])->name('google.drive.upload');
-Route::get('google-drive/authenticate', [GoogleDriveController::class, 'authenticate']);
-Route::get('google-drive/success', [GoogleDriveController::class, 'success']);
+Route::get('google-drive/authenticate', [GoogleDriveController::class, 'authenticate'])->name('google.drive.authenticate');
+Route::get('google-drive/success', [GoogleDriveController::class, 'success'])->name('google.drive.success');

@@ -20,9 +20,9 @@ class GoogleDriveService
 
     public function __construct()
     {
-        $this->tokenPath = storage_path('app/google-drive/token.json');
+        $this->tokenPath = storage_path('app/google-drive/aaquinones.fo12.dswd.gov.ph.access.token.json');
         $this->client = new Google_Client();
-        $this->client->setAuthConfig(storage_path('app/google-drive/client_secret.json'));
+        $this->client->setAuthConfig(storage_path('app/google-drive/aaquinones.fo12.dswd.gov.ph.client_secret.json'));
         $this->client->setApplicationName('Gdrive API PHP');
         $this->client->setScopes([
             'https://www.googleapis.com/auth/drive.file',
@@ -95,10 +95,9 @@ class GoogleDriveService
         }
     }
 
-    public function uploadFile($filename, $filepath, $mimetype)
+    public function uploadFile($filename, $filepath, $mimetype,$folderId )
     {   
-        //sample 123
-        $folderId = '16lEMWn2r2csC4yTqKxdyXqjuW4RSDaed';
+        $folderId = '1rwBxYJfJHPgz0dZqIl2QLbokSZcgOgq4';
         try {
             $fileMetadata = new Google_Service_Drive_DriveFile([
                 'name' => $filename,
@@ -111,7 +110,29 @@ class GoogleDriveService
                 'uploadType' => 'multipart',
                 'fields' => 'id'
             ]);
-            // return 'File ID: ' . $file->id . ' - successfully uploaded!';
+            
+            return $file->id;
+        } catch (Exception $e) {
+            return 'Error: ' . $e->getMessage();
+        }
+    }
+    public function uploadFileToSharedDrive($filename, $filepath, $mimetype,$destination_folder)
+    {   
+        //sample 123
+        $folderId = '1rwBxYJfJHPgz0dZqIl2QLbokSZcgOgq4';
+        try {
+            $fileMetadata = new Google_Service_Drive_DriveFile([
+                'name' => $filename,
+                'parents' => [$folderId]
+            ]);
+            $content = file_get_contents($filepath);
+            $file = $this->driveService->files->create($fileMetadata, [
+                'data' => $content,
+                'mimeType' => $mimetype,
+                'uploadType' => 'multipart',
+                'fields' => 'id'
+            ]);
+            $this->moveFile($file->id,$destination_folder);
             return $file->id;
         } catch (Exception $e) {
             return 'Error: ' . $e->getMessage();
@@ -188,25 +209,61 @@ class GoogleDriveService
         }
     }
 
-    public function moveFile($file_id)
+    public function moveFile($file_id, $folder_id)
     {
         try {
-            $folder_id = $this->getItemId('uploaded_images');
+            // Ensure the folder ID is provided
             if (!$folder_id) {
                 return 'Folder not found.';
             }
-            $file = $this->driveService->files->get($file_id, ['fields' => 'parents']);
+
+            // Retrieve the current parents of the file
+            $file = $this->driveService->files->get($file_id, [
+                'fields' => 'parents',
+                'supportsAllDrives' => true
+            ]);
             $previous_parents = join(',', $file->getParents());
 
+            // Update the file to add it to the new folder and remove it from the previous folders
             $this->driveService->files->update($file_id, new Google_Service_Drive_DriveFile(), [
                 'addParents' => $folder_id,
                 'removeParents' => $previous_parents,
-                'fields' => 'id, parents'
+                'fields' => 'id, parents',
+                'supportsAllDrives' => true
             ]);
+
             return 'File moved successfully.';
         } catch (Exception $e) {
             return 'Error: ' . $e->getMessage();
         }
     }
+
+    public function listFilesInDrive($driveId)
+    {
+        try {
+            $response = $this->driveService->files->listFiles([
+                'q' => "'{$driveId}' in parents",
+                'pageSize' => 10,
+                'fields' => 'nextPageToken, files(id, name)',
+                'supportsAllDrives' => true,
+                'includeItemsFromAllDrives' => true,
+            ]);
+
+            $files = $response->getFiles();
+            if (empty($files)) {
+                return 'No files found.';
+            } else {
+                $result = 'Files:';
+                foreach ($files as $file) {
+                    $result .= sprintf("%s (%s)\n", $file->getName(), $file->getId());
+                }
+                return $result;
+            }
+        } catch (Exception $e) {
+            return 'Error: ' . $e->getMessage();
+        }
+    }
+
+
 }
 
